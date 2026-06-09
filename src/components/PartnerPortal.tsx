@@ -26,7 +26,7 @@ const serviceTypes = [
   { value: 'other', label: 'Other Service' },
 ];
 
-export default function PartnerPortal() {
+export function PartnerPortal() {
   const { language, t } = useLanguage();
   const [form, setForm] = useState({ name: '', service: 'hotel', email: '' });
   const [submitted, setSubmitted] = useState(false);

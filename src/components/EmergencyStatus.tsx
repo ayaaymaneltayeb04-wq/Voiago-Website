@@ -1,97 +1,56 @@
-import { useState } from 'react';
-import { Shield, AlertTriangle, CheckCircle, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { useLanguage } from '../lib/LanguageContext';
 
-interface Advisory {
-  id: string;
-  level: 'safe' | 'caution' | 'alert';
-  title: string;
-  message: string;
-  date: string;
+interface EmergencyStatusProps {
+  police: string;
+  ambulance: string;
+  countryName: string;
+  flag: string;
 }
 
-const advisories: Advisory[] = [
-  {
-    id: '1',
-    level: 'safe',
-    title: 'General Safety',
-    message: 'Current area is safe for travelers. Normal precautions advised.',
-    date: 'Updated 2 hours ago',
-  },
-  {
-    id: '2',
-    level: 'caution',
-    title: 'Weather Advisory',
-    message: 'High temperatures expected. Stay hydrated and avoid midday sun exposure.',
-    date: 'Updated 4 hours ago',
-  },
-  {
-    id: '3',
-    level: 'safe',
-    title: 'COVID-19',
-    message: 'No restrictions in place. Mask optional in indoor spaces.',
-    date: 'Updated 1 day ago',
-  },
-];
-
-const levelConfig = {
-  safe: { icon: CheckCircle, color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800' },
-  caution: { icon: Info, color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800' },
-  alert: { icon: AlertTriangle, color: 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400', border: 'border-red-200 dark:border-red-800' },
-};
-
-export function EmergencyStatus() {
-  const { t } = useLanguage();
-  const [expanded, setExpanded] = useState<string | null>(null);
+export function EmergencyStatus({ police, ambulance, countryName, flag }: EmergencyStatusProps) {
+  const { language } = useLanguage();
 
   return (
-    <div className="bg<think> dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-      <div className="p-6 border-b border-slate-200 dark:border-slate-700">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
-            <Shield className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-slate-900 dark:text<think>">{t('emergency_status')}</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">{t('emergency_last_updated')} 2m ago</p>
-          </div>
+    <div className="card-premium p-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100">
+          <AlertTriangle className="h-5 w-5 text-red-500" />
+        </div>
+        <div>
+          <h3 className="text-base font-bold text-navy-900">
+            {language === 'ar' ? 'أرقام الطوارئ' : 'Emergency Numbers'}
+          </h3>
+          <p className="text-xs text-navy-400">{flag} {countryName}</p>
+        </div>
+        <div className="ml-auto flex items-center gap-1.5 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+          <CheckCircle className="h-3 w-3" />
+          {language === 'ar' ? 'نشط' : 'Active'}
         </div>
       </div>
-      <div className="divide-y divide-slate-100 dark:divide-slate-700">
-        {advisories.map((advisory) => {
-          const config = levelConfig[advisory.level];
-          const Icon = config.icon;
-          const isExpanded = expanded === advisory.id;
 
-          return (
-            <div key={advisory.id} className={`p-4 ${isExpanded ? 'bg-slate-50 dark:bg-slate-700/30' : ''}`}>
-              <button
-                onClick={() => setExpanded(isExpanded ? null : advisory.id)}
-                className="w-full flex items-center gap-3"
-              >
-                <div className={`p-2 rounded-lg ${config.color}`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-slate-900 dark:text<think>">{advisory.title}</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">{advisory.date}</p>
-                </div>
-                {isExpanded ? (
-                  <ChevronUp className="h-4 w-4 text-slate-400" />
-                ) : (
-                  <ChevronDown className="h-4 w-4 text-slate-400" />
-                )}
-              </button>
-              {isExpanded && (
-                <div className="mt-3 ml-11">
-                  <div className={`p-3 rounded-xl border ${config.border} ${config.color} bg-opacity-20`}>
-                    <p className="text-sm">{advisory.message}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })}
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { label: language === 'ar' ? 'الشرطة' : 'Police', number: police, color: 'border-navy-200 bg-navy-50', numColor: 'text-navy-700' },
+          { label: language === 'ar' ? 'الإسعاف' : 'Ambulance', number: ambulance, color: 'border-red-200 bg-red-50', numColor: 'text-red-600' },
+        ].map((item) => (
+          <a
+            key={item.label}
+            href={`tel:${item.number}`}
+            className={`flex flex-col items-center rounded-2xl border-2 ${item.color} p-4 transition hover:shadow-soft`}
+          >
+            <span className="text-xs font-bold text-navy-400 uppercase tracking-wide">{item.label}</span>
+            <span className={`text-3xl font-black mt-1 ${item.numColor}`}>{item.number}</span>
+            <span className="text-[10px] text-navy-400 mt-1">{language === 'ar' ? 'اضغط للاتصال' : 'Tap to call'}</span>
+          </a>
+        ))}
+      </div>
+
+      <div className="mt-4 flex items-center gap-2 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+        <Clock className="h-4 w-4 text-amber-500 flex-shrink-0" />
+        <p className="text-xs text-amber-700 font-medium">
+          {language === 'ar' ? 'متوفر على مدار الساعة 24/7' : 'Available 24/7 for emergencies'}
+        </p>
       </div>
     </div>
   );

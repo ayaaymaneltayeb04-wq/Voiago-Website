@@ -1,164 +1,111 @@
-import { useState, useEffect } from 'react';
-import { Share2, MapPin, Clock, Users, AlertTriangle, CheckCircle, Phone, Copy, X } from 'lucide-react';
+import { useState } from 'react';
+import { Shield, MapPin, Share2, CheckCircle, Navigation } from 'lucide-react';
 import { useLanguage } from '../lib/LanguageContext';
 
-interface Contact {
-  id: string;
-  name: string;
-  phone: string;
-  relation: string;
-}
+interface Contact { name: string; phone: string; relation: string; }
 
-const emergencyContacts: Contact[] = [
-  { id: '1', name: 'Sarah Ahmed', phone: '+20 100 123 4567', relation: 'Sister' },
-  { id: '2', name: 'Mohamed Ali', phone: '+20 111 987 6543', relation: 'Friend' },
-  { id: '3', name: 'Voiago Support', phone: '+20 2 2797 3000', relation: 'Support' },
+const defaultContacts: Contact[] = [
+  { name: 'Emergency Contact 1', phone: '+20-100-000-0001', relation: 'Family' },
+  { name: 'Emergency Contact 2', phone: '+20-100-000-0002', relation: 'Friend' },
 ];
 
 export function SOSLocationSharing() {
-  const { t } = useLanguage();
-  const [sharing, setSharing] = useState(false);
-  const [countdown, setCountdown] = useState(5);
+  const { language } = useLanguage();
   const [shared, setShared] = useState(false);
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [showContacts, setShowContacts] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [contacts] = useState<Contact[]>(defaultContacts);
+  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
 
-  useEffect(() => {
-    if (sharing && countdown > 0) {
-      const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-    if (sharing && countdown === 0) {
+  const shareLocation = () => {
+    setLoading(true);
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setShared(true);
+          setLoading(false);
+        },
+        () => {
+          setPosition({ lat: 30.0444, lng: 31.2357 });
+          setShared(true);
+          setLoading(false);
+        }
+      );
+    } else {
+      setPosition({ lat: 30.0444, lng: 31.2357 });
       setShared(true);
-      setSharing(false);
-    }
-  }, [sharing, countdown]);
-
-  const startSharing = () => {
-    setSharing(true);
-    setCountdown(5);
-    setShared(false);
-    // Mock location
-    setLocation({ lat: 28.5, lng: 34.5 });
-  };
-
-  const copyLocation = () => {
-    if (location) {
-      navigator.clipboard.writeText(`${location.lat}, ${location.lng}`);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-4">
-      {!sharing && !shared && (
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-3" />
-          <h4 className="font-semibold text-slate-900 dark:text<think> mb-2">{t('emergency_sos')}</h4>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-            {t('emergency_sos_desc')}
-          </p>
-          <button
-            onClick={startSharing}
-            className="px-6 py-3 bg-red-600 hover:bg-red-700 text<think> rounded-xl font-medium transition-colors"
-          >
-            {t('common_activate')} SOS
-          </button>
+    <div className="card-premium p-6 space-y-5">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100">
+          <Shield className="h-5 w-5 text-red-500" />
         </div>
-      )}
-
-      {sharing && (
-        <div className="text-center">
-          <div className="relative w-20 h-20 mx-auto mb-4">
-            <div className="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-20" />
-            <div className="absolute inset-2 bg-red-500 rounded-full animate-ping opacity-40 delay-150" />
-            <div className="absolute inset-4 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-2xl font-bold text<think>">{countdown}</span>
-            </div>
-          </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            {t('common_sharing_location_in')} {countdown}...
+        <div>
+          <h3 className="text-base font-bold text-navy-900">
+            {language === 'ar' ? 'مشاركة الموقع' : 'SOS Location Sharing'}
+          </h3>
+          <p className="text-xs text-navy-400">
+            {language === 'ar' ? 'شارك موقعك مع جهات الاتصال الموثوقة' : 'Share your live location with trusted contacts'}
           </p>
-          <button
-            onClick={() => { setSharing(false); setCountdown(5); }}
-            className="mt-3 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 underline"
-          >
-            {t('common_cancel')}
-          </button>
         </div>
-      )}
+      </div>
 
-      {shared && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
-            <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-            <div>
-              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{t('common_location_shared')}</p>
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">{t('common_contacts_notified')}</p>
-            </div>
-          </div>
-
-          {location && (
-            <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                  <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                    {location.lat.toFixed(4)}, {location.lng.toFixed(4)}
-                  </span>
-                </div>
-                <button
-                  onClick={copyLocation}
-                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
-                  title={t('common_copy')}
-                >
-                  <Copy className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="h-32 bg-slate-200 dark:bg-slate-600 rounded-lg flex items-center justify-center">
-                <MapPin className="h-8 w-8 text-slate-400" />
-              </div>
-            </div>
+      {/* Share button */}
+      {!shared ? (
+        <button
+          onClick={shareLocation}
+          disabled={loading}
+          className="btn-cta w-full py-3 text-sm rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-none"
+          style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}
+        >
+          {loading ? (
+            <span className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+          ) : (
+            <Navigation className="h-4 w-4" />
           )}
-
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowContacts(!showContacts)}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
-            >
-              <Users className="h-4 w-4" />
-              {t('emergency_contacts')}
-            </button>
-            <button
-              onClick={startSharing}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 rounded-xl text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-            >
-              <Share2 className="h-4 w-4" />
-              {t('common_share_again')}
-            </button>
+          {loading
+            ? (language === 'ar' ? 'جارٍ التحديد...' : 'Getting location...')
+            : (language === 'ar' ? 'شارك موقعي الآن' : 'Share My Location Now')}
+        </button>
+      ) : (
+        <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-4">
+          <div className="flex items-center gap-2 text-emerald-700 font-semibold text-sm">
+            <CheckCircle className="h-5 w-5" />
+            {language === 'ar' ? 'تم مشاركة الموقع بنجاح!' : 'Location Shared Successfully!'}
           </div>
-
-          {showContacts && (
-            <div className="space-y-2">
-              {emergencyContacts.map((contact) => (
-                <a
-                  key={contact.id}
-                  href={`tel:${contact.phone}`}
-                  className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                >
-                  <div className="p-2 bg-teal-50 dark:bg-teal-900/20 rounded-lg">
-                    <Phone className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-900 dark:text<think>">{contact.name}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{contact.relation}</p>
-                  </div>
-                  <span className="text-sm text-slate-600 dark:text-slate-300">{contact.phone}</span>
-                </a>
-              ))}
-            </div>
+          {position && (
+            <p className="text-xs text-emerald-600 mt-1">
+              {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
+            </p>
           )}
         </div>
       )}
+
+      {/* Contacts */}
+      <div>
+        <p className="text-xs font-bold text-navy-400 uppercase tracking-wide mb-3">
+          {language === 'ar' ? 'جهات الاتصال الطارئة' : 'Emergency Contacts'}
+        </p>
+        <div className="space-y-2">
+          {contacts.map((c) => (
+            <div key={c.phone} className="flex items-center justify-between rounded-xl bg-navy-50 px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-navy-800">{c.name}</p>
+                <p className="text-xs text-navy-400">{c.phone} · {c.relation}</p>
+              </div>
+              {shared && (
+                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-full">
+                  <CheckCircle className="h-3 w-3" /> Notified
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

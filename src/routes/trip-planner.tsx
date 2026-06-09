@@ -1,268 +1,153 @@
 import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { MapPin, Calendar, Users, DollarSign, Sparkles, Wand2, Save, Share2, Clock, Sun, Sunset, Moon, Loader2 } from 'lucide-react';
+import { createFileRoute } from '@tanstack/react-router';
 import { DashboardLayout } from '../components/DashboardLayout';
-import { useAuth } from '../lib/auth-context';
 import { useLanguage } from '../lib/LanguageContext';
+import { MapPin, DollarSign, Calendar, Sparkles, TrendingUp } from 'lucide-react';
 
 export const Route = createFileRoute('/trip-planner')({
   head: () => ({ meta: [{ title: 'Trip Planner — Voiago' }] }),
-  component: TripPlannerPage,
+  component: TripPlanner,
 });
 
-interface Activity {
-  time: string;
-  title: string;
-  desc: string;
-  icon: typeof Sun;
-  cost: string;
-}
+interface Plan { flight: number; hotel: number; food: number; activities: number; misc: number; }
 
-interface DayPlan {
-  day: number;
-  date: string;
-  activities: Activity[];
-}
-
-const generateMockItinerary = (destination: string): DayPlan[] => [
-  {
-    day: 1,
-    date: 'Jun 15',
-    activities: [
-      { time: '09:00', title: 'Arrival & Check-in', desc: `Arrive at ${destination} airport, transfer to your eco-lodge.`, icon: Sun, cost: '$0' },
-      { time: '14:00', title: 'Local Market Exploration', desc: 'Visit the vibrant local souk for spices, textiles, and crafts.', icon: Sun, cost: '$25' },
-      { time: '19:00', title: 'Welcome Dinner', desc: 'Traditional cuisine at a family-run restaurant.', icon: Moon, cost: '$40' },
-    ],
-  },
-  {
-    day: 2,
-    date: 'Jun 16',
-    activities: [
-      { time: '08:00', title: 'Guided Heritage Walk', desc: 'Explore ancient ruins and historical sites with a local archaeologist.', icon: Sun, cost: '$55' },
-      { time: '13:00', title: 'Lunch by the Oasis', desc: 'Fresh farm-to-table meal at a desert oasis.', icon: Sun, cost: '$30' },
-      { time: '17:00', title: 'Sunset Camel Trek', desc: 'Experience the golden hour from a camelback perspective.', icon: Sunset, cost: '$45' },
-    ],
-  },
-  {
-    day: 3,
-    date: 'Jun 17',
-    activities: [
-      { time: '09:00', title: 'Snorkeling Adventure', desc: 'Discover vibrant coral reefs and marine life.', icon: Sun, cost: '$65' },
-      { time: '15:00', title: 'Beach Relaxation', desc: 'Unwind at a secluded beach with refreshments.', icon: Sun, cost: '$15' },
-      { time: '20:00', title: 'Stargazing Dinner', desc: 'Astronomy-guided dinner under the desert sky.', icon: Moon, cost: '$50' },
-    ],
-  },
+const budgetTips = [
+  'Book 6–8 weeks ahead for the best fares.',
+  'Travel light — pack neutrals you can mix and match.',
+  'Leave one afternoon entirely unplanned — magic happens.',
+  'Book accommodations with free cancellation for flexibility.',
 ];
 
-export function TripPlannerPage() {
-  const { t } = useLanguage();
-  const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const [destination, setDestination] = useState('');
-  const [dates, setDates] = useState('');
-  const [travelers, setTravelers] = useState('2');
-  const [budget, setBudget] = useState('medium');
-  const [preferences, setPreferences] = useState<string[]>([]);
-  const [generating, setGenerating] = useState(false);
-  const [itinerary, setItinerary] = useState<DayPlan[] | null>(null);
+function TripPlanner() {
+  const { t, language } = useLanguage();
+  const [dest, setDest] = useState('');
+  const [budget, setBudget] = useState('');
+  const [days, setDays] = useState('7');
+  const [plan, setPlan] = useState<Plan | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  if (!isAuthenticated) {
-    navigate({ to: '/auth' });
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600" />
-      </div>
-    );
-  }
-
-  const togglePreference = (pref: string) => {
-    setPreferences((prev) =>
-      prev.includes(pref) ? prev.filter((p) => p !== pref) : [...prev, pref]
-    );
+  const generate = () => {
+    const b = Number(budget) || 1000;
+    setLoading(true);
+    setTimeout(() => {
+      setPlan({ flight: Math.round(b * 0.35), hotel: Math.round(b * 0.30), food: Math.round(b * 0.20), activities: Math.round(b * 0.10), misc: Math.round(b * 0.05) });
+      setLoading(false);
+    }, 800);
   };
 
-  const handleGenerate = async () => {
-    if (!destination) return;
-    setGenerating(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    setItinerary(generateMockItinerary(destination));
-    setGenerating(false);
-  };
-
-  const prefOptions = [
-    { id: 'adventure', label: t('common_adventure') },
-    { id: 'culture', label: t('common_culture') },
-    { id: 'food', label: t('common_food') },
-    { id: 'nature', label: t('common_nature') },
-    { id: 'relaxation', label: t('common_relaxation') },
-    { id: 'nightlife', label: t('common_nightlife') },
-  ];
+  const breakdownRows = plan ? [
+    { label: t('trip_planner.accommodation'), value: plan.hotel, color: 'bg-azure-500', pct: 30 },
+    { label: t('trip_planner.food'), value: plan.food, color: 'bg-orange-500', pct: 20 },
+    { label: t('trip_planner.transportation'), value: plan.flight, color: 'bg-navy-700', pct: 35 },
+    { label: t('trip_planner.activities'), value: plan.activities, color: 'bg-emerald-500', pct: 10 },
+    { label: t('trip_planner.miscellaneous'), value: plan.misc, color: 'bg-amber-500', pct: 5 },
+  ] : [];
 
   return (
-    <DashboardLayout title={t('planner_title')} subtitle={t('planner_subtitle')}>
-      <div className="max-w-4xl mx-auto">
-        {/* Input Form */}
-        <div className="bg<think> dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                <MapPin className="inline h-4 w-4 mr-1" />
-                {t('planner_destination')}
-              </label>
-              <input
-                type="text"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-                placeholder="e.g. Dahab, Egypt"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
-              />
+    <DashboardLayout title={t('trip_planner.title')} subtitle={t('trip_planner.subtitle')}>
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Input card */}
+        <div className="card-premium p-7">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-orange-50">
+              <Sparkles className="h-5 w-5 text-orange-500" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                <Calendar className="inline h-4 w-4 mr-1" />
-                {t('planner_dates')}
-              </label>
-              <input
-                type="text"
-                value={dates}
-                onChange={(e) => setDates(e.target.value)}
-                placeholder="Jun 15 - Jun 22"
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                <Users className="inline h-4 w-4 mr-1" />
-                {t('planner_travelers')}
-              </label>
-              <select
-                value={travelers}
-                onChange={(e) => setTravelers(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5+">5+</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                <DollarSign className="inline h-4 w-4 mr-1" />
-                {t('planner_budget')}
-              </label>
-              <select
-                value={budget}
-                onChange={(e) => setBudget(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
-              >
-                <option value="budget">{t('common_budget')}</option>
-                <option value="medium">{t('common_standard')}</option>
-                <option value="luxury">{t('common_luxury')}</option>
-              </select>
+              <p className="section-label">{language === 'ar' ? 'خطط بعناية' : 'Plan with intention'}</p>
+              <h3 className="text-lg font-bold text-navy-900">{language === 'ar' ? 'إلى أين بعد؟' : 'Where to next?'}</h3>
             </div>
           </div>
 
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              <Sparkles className="inline h-4 w-4 mr-1" />
-              {t('planner_preferences')}
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {prefOptions.map((pref) => (
-                <button
-                  key={pref.id}
-                  onClick={() => togglePreference(pref.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    preferences.includes(pref.id)
-                      ? 'bg-teal-600 text<think> shadow-md'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                  }`}
-                >
-                  {pref.label}
-                </button>
-              ))}
-            </div>
-          </div>
+          <div className="space-y-4">
+            <Field icon={MapPin} label={t('trip_planner.destination')} value={dest} onChange={setDest} placeholder={t('trip_planner.destination_placeholder')} />
+            <Field icon={DollarSign} label={t('trip_planner.budget')} value={budget} onChange={setBudget} placeholder={t('trip_planner.budget_placeholder')} type="number" />
+            <Field icon={Calendar} label={t('trip_planner.days')} value={days} onChange={setDays} placeholder={t('trip_planner.days_placeholder')} type="number" />
 
-          <button
-            onClick={handleGenerate}
-            disabled={!destination || generating}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text<think> font-medium rounded-xl hover:from-teal-700 hover:to-cyan-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {generating ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                {t('planner_generating')}
-              </>
-            ) : (
-              <>
-                <Wand2 className="h-5 w-5" />
-                {t('planner_generate')}
-              </>
-            )}
-          </button>
+            <button
+              onClick={generate}
+              disabled={loading}
+              className="btn-cta w-full py-3.5 text-sm mt-2"
+            >
+              {loading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {loading ? (language === 'ar' ? 'جارٍ الإنشاء...' : 'Generating...') : t('trip_planner.plan_button')}
+            </button>
+          </div>
         </div>
 
-        {/* Generated Itinerary */}
-        {itinerary && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold text-slate-900 dark:text<think>">
-                {destination} — 3 {t('common_days')}
-              </h3>
-              <div className="flex gap-2">
-                <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                  <Save className="h-4 w-4" />
-                  {t('planner_save_trip')}
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                  <Share2 className="h-4 w-4" />
-                  {t('planner_share')}
-                </button>
-              </div>
-            </div>
+        {/* Budget breakdown */}
+        <div className="card-premium p-7">
+          <div className="flex items-center gap-2 mb-6">
+            <TrendingUp className="h-5 w-5 text-azure-500" />
+            <h3 className="text-lg font-bold text-navy-900">{t('trip_planner.budget_breakdown')}</h3>
+          </div>
 
-            {itinerary.map((day) => (
-              <div key={day.day} className="bg<think> dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-                <div className="bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 px-6 py-4 border-b border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-teal-600 text<think> font-bold text-sm">
-                      {t('planner_day')} {day.day}
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text<think>">{day.date}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{day.activities.length} {t('common_activities')}</p>
-                    </div>
+          {plan ? (
+            <div className="space-y-4">
+              {breakdownRows.map((row) => (
+                <div key={row.label}>
+                  <div className="flex justify-between text-sm mb-1.5">
+                    <span className="font-medium text-navy-700">{row.label}</span>
+                    <span className="font-bold text-navy-900">${row.value.toLocaleString()}</span>
+                  </div>
+                  <div className="h-2.5 rounded-full bg-navy-100 overflow-hidden">
+                    <div className={`h-full rounded-full ${row.color} transition-all duration-700`} style={{ width: `${row.pct}%` }} />
                   </div>
                 </div>
-                <div className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {day.activities.map((activity, idx) => (
-                    <div key={idx} className="flex gap-4 p-5">
-                      <div className="flex flex-col items-center">
-                        <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg">
-                          <activity.icon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                        </div>
-                        <div className="flex-1 w-px bg-slate-200 dark:bg-slate-700 my-2" />
-                      </div>
-                      <div className="flex-1 pb-4">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Clock className="h-3.5 w-3.5 text-slate-400" />
-                          <span className="text-xs text-slate-500 dark:text-slate-400">{activity.time}</span>
-                          <span className="text-xs font-medium text-teal-600 dark:text-teal-400">{activity.cost}</span>
-                        </div>
-                        <h4 className="font-medium text-slate-900 dark:text<think> mb-1">{activity.title}</h4>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">{activity.desc}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              ))}
+              <div className="rounded-2xl bg-navy-50 p-4 mt-4">
+                <p className="text-sm text-navy-600">
+                  {language === 'ar' ? `رحلة ${days} أيام${dest ? ` إلى ${dest}` : ''}` : `For a ${days}-day trip${dest ? ` to ${dest}` : ''}.`}
+                </p>
+                <p className="text-lg font-black text-navy-900 mt-1">${Number(budget || 1000).toLocaleString()} {language === 'ar' ? 'إجمالي الميزانية' : 'Total Budget'}</p>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Sparkles className="h-12 w-12 text-navy-100 mb-4" />
+              <p className="text-sm text-navy-400">
+                {language === 'ar' ? 'تفصيل ميزانيتك سيظهر هنا بعد الإنشاء.' : 'Your beautifully calculated breakdown will appear here.'}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tips */}
+      <div className="card-premium p-6 mt-5">
+        <h3 className="text-sm font-bold text-navy-800 mb-4 flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-orange-400" />
+          {language === 'ar' ? 'نصائح لرحلة هادئة' : 'Tips for a serene journey'}
+        </h3>
+        <div className="grid sm:grid-cols-2 gap-3">
+          {budgetTips.map((tip) => (
+            <div key={tip} className="flex items-start gap-2.5 rounded-xl bg-azure-50 px-4 py-3">
+              <span className="h-1.5 w-1.5 rounded-full bg-azure-500 flex-shrink-0 mt-1.5" />
+              <p className="text-xs text-azure-800">{tip}</p>
+            </div>
+          ))}
+        </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+function Field({ icon: Icon, label, value, onChange, placeholder, type = 'text' }: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string; value: string;
+  onChange: (v: string) => void;
+  placeholder: string; type?: string;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-bold text-navy-500 mb-1.5">{label}</label>
+      <div className="relative">
+        <Icon className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-navy-300" />
+        <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="input-field pl-10" />
+      </div>
+    </div>
   );
 }

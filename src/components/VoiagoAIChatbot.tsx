@@ -32,7 +32,7 @@ const getReply = (text: string): string => {
   return `Thank you for contacting Voiago Concierge. I'm analyzing your request to provide the most premium, personalized travel recommendations. Ask me about bookings, budgeting, or local secrets!`;
 };
 
-export function VoiagoAIChatbot() {
+export default function VoiagoAIChatbot() {
   const { language, isRtl } = useLanguage();
   const [open, setOpen] = useState(false);
   const [emergencyMode, setEmergencyMode] = useState(false);

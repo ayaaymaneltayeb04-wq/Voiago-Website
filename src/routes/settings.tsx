@@ -1,276 +1,176 @@
 import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { User, Bell, Shield, Globe, DollarSign, Camera, Save, Check } from 'lucide-react';
+import { createFileRoute } from '@tanstack/react-router';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { useAuth } from '../lib/auth-context';
 import { useLanguage } from '../lib/LanguageContext';
+import { User, Bell, Settings, Shield, CreditCard, Camera, Save, Check } from 'lucide-react';
 
 export const Route = createFileRoute('/settings')({
   head: () => ({ meta: [{ title: 'Settings — Voiago' }] }),
   component: SettingsPage,
 });
 
-type TabType = 'profile' | 'notifications' | 'privacy' | 'language' | 'currency';
+type Tab = 'profile' | 'notifications' | 'preferences' | 'security' | 'subscription';
 
-export function SettingsPage() {
+const tabs: { id: Tab; icon: typeof User; labelKey: string }[] = [
+  { id: 'profile', icon: User, labelKey: 'settings.profile' },
+  { id: 'notifications', icon: Bell, labelKey: 'settings.notifications' },
+  { id: 'preferences', icon: Settings, labelKey: 'settings.preferences' },
+  { id: 'security', icon: Shield, labelKey: 'settings.security' },
+  { id: 'subscription', icon: CreditCard, labelKey: 'settings.subscription' },
+];
+
+function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabType>('profile');
+  const { user, updatePreferences } = useAuth();
+  const [activeTab, setActiveTab] = useState<Tab>('profile');
   const [saved, setSaved] = useState(false);
-  const [form, setForm] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: '+20 100 123 4567',
-    bio: 'Adventure seeker and digital nomad. Love exploring hidden gems.',
-  });
 
-  if (!isAuthenticated) {
-    navigate({ to: '/auth' });
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600" />
-      </div>
-    );
-  }
+  const [firstName, setFirstName] = useState(user?.name?.split(' ')[0] ?? '');
+  const [lastName, setLastName] = useState(user?.name?.split(' ')[1] ?? '');
+  const [currency, setCurrency] = useState(user?.preferredCurrency ?? 'USD');
+  const [notifs, setNotifs] = useState({ bookings: true, reminders: true, deals: false, newsletter: true });
 
-  const handleSave = () => {
+  const save = () => {
+    updatePreferences(currency, language as 'en' | 'ar');
     setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    setTimeout(() => setSaved(false), 2500);
   };
 
-  const tabs: { id: TabType; label: string; icon: typeof User }[] = [
-    { id: 'profile', label: t('settings_profile'), icon: User },
-    { id: 'notifications', label: t('settings_notifications'), icon: Bell },
-    { id: 'privacy', label: t('settings_privacy'), icon: Shield },
-    { id: 'language', label: t('settings_language'), icon: Globe },
-    { id: 'currency', label: t('settings_currency'), icon: DollarSign },
-  ];
-
   return (
-    <DashboardLayout title={t('settings_title')} subtitle={t('settings_subtitle')}>
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-4">
-            <div className="flex items-center gap-3 mb-6 p-2">
-              {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="h-12 w-12 rounded-full object-cover" />
-              ) : (
-                <div className="h-12 w-12 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center">
-                  <User className="h-6 w-6 text-teal-600 dark:text-teal-400" />
-                </div>
-              )}
-              <div>
-                <p className="font-medium text-slate-900 dark:text<think>">{user?.name}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
-              </div>
-            </div>
-            <nav className="space-y-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                    activeTab === tab.id
-                      ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <tab.icon className="h-4 w-4" />
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-          </div>
+    <DashboardLayout title={t('settings.title')} subtitle={t('settings.subtitle')}>
+      <div className="grid lg:grid-cols-4 gap-5">
+        {/* Sidebar tabs */}
+        <div className="card-premium p-3 lg:col-span-1 h-fit">
+          <nav className="space-y-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`sidebar-link w-full text-left ${activeTab === tab.id ? 'active' : ''}`}
+              >
+                <tab.icon className="h-4 w-4" />
+                {t(tab.labelKey)}
+              </button>
+            ))}
+          </nav>
         </div>
 
         {/* Content */}
-        <div className="lg:col-span-3">
-          <div className="bg<think> dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
-            {activeTab === 'profile' && (
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    {user?.avatar ? (
-                      <img src={user.avatar} alt={user.name} className="h-20 w-20 rounded-full object-cover" />
-                    ) : (
-                      <div className="h-20 w-20 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center">
-                        <User className="h-10 w-10 text-teal-600 dark:text-teal-400" />
-                      </div>
-                    )}
-                    <button className="absolute -bottom-1 -right-1 p-1.5 bg-teal-600 text<think> rounded-full shadow-sm hover:bg-teal-700 transition-colors">
-                      <Camera className="h-3.5 w-3.5" />
-                    </button>
+        <div className="lg:col-span-3 card-premium p-7">
+          {activeTab === 'profile' && (
+            <div>
+              <h3 className="text-base font-bold text-navy-900 mb-6">{t('settings.profile')}</h3>
+              <div className="flex items-center gap-4 mb-8">
+                <div className="relative">
+                  <div className="h-20 w-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-2xl font-black">
+                    {firstName[0] ?? 'V'}
                   </div>
-                  <div>
-                    <h3 className="font-semibold text-slate-900 dark:text<think>">{t('settings_profile')}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('settings_profile_desc')}</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('settings_name')}</label>
-                    <input
-                      type="text"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('settings_email')}</label>
-                    <input
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('settings_phone')}</label>
-                    <input
-                      type="tel"
-                      value={form.phone}
-                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">{t('settings_bio')}</label>
-                    <textarea
-                      value={form.bio}
-                      onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                      rows={3}
-                      className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'notifications' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-slate-900 dark:text<think> mb-4">{t('settings_notifications')}</h3>
-                {[
-                  { id: 'flight', label: t('notif_flight_reminder'), desc: t('notif_flight_desc') },
-                  { id: 'checkin', label: t('notif_check_in'), desc: t('notif_checkin_desc') },
-                  { id: 'safety', label: t('notif_safety_alert'), desc: t('notif_safety_desc') },
-                  { id: 'points', label: t('notif_points_earned'), desc: t('notif_points_desc') },
-                  { id: 'promo', label: t('notif_promo'), desc: t('notif_promo_desc') },
-                ].map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text<think>">{item.label}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
-                    </div>
-                    <Toggle defaultOn />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'privacy' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-slate-900 dark:text<think> mb-4">{t('settings_privacy')}</h3>
-                {[
-                  { id: 'location', label: t('privacy_location'), desc: t('privacy_location_desc') },
-                  { id: 'profile', label: t('privacy_profile'), desc: t('privacy_profile_desc') },
-                  { id: 'data', label: t('privacy_data'), desc: t('privacy_data_desc') },
-                ].map((item) => (
-                  <div key={item.id} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text<think>">{item.label}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">{item.desc}</p>
-                    </div>
-                    <Toggle defaultOn={item.id === 'location'} />
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {activeTab === 'language' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-slate-900 dark:text<think> mb-4">{t('settings_language')}</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setLanguage('en')}
-                    className={`p-6 rounded-2xl border-2 transition-all ${
-                      language === 'en'
-                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
-                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-                    }`}
-                  >
-                    <p className="text-2xl mb-2">🇺🇸</p>
-                    <p className="font-medium text-slate-900 dark:text<think>">English</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('common_english')}</p>
-                  </button>
-                  <button
-                    onClick={() => setLanguage('ar')}
-                    className={`p-6 rounded-2xl border-2 transition-all ${
-                      language === 'ar'
-                        ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
-                        : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-                    }`}
-                  >
-                    <p className="text-2xl mb-2">🇸🇦</p>
-                    <p className="font-medium text-slate-900 dark:text<think>">العربية</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{t('common_arabic')}</p>
+                  <button className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full bg-navy-900 text-white hover:bg-orange-500 transition">
+                    <Camera className="h-3.5 w-3.5" />
                   </button>
                 </div>
-              </div>
-            )}
-
-            {activeTab === 'currency' && (
-              <div className="space-y-4">
-                <h3 className="font-semibold text-slate-900 dark:text<think> mb-4">{t('settings_currency')}</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {['USD', 'EUR', 'GBP', 'EGP', 'AED', 'SAR'].map((curr) => (
-                    <button
-                      key={curr}
-                      className="p-4 rounded-xl border border-slate-200 dark:border-slate-600 hover:border-teal-500 dark:hover:border-teal-500 transition-colors text-center"
-                    >
-                      <p className="font-medium text-slate-900 dark:text<think>">{curr}</p>
-                    </button>
-                  ))}
+                <div>
+                  <p className="text-base font-bold text-navy-900">{firstName} {lastName}</p>
+                  <p className="text-sm text-navy-400">{user?.email}</p>
                 </div>
               </div>
-            )}
-
-            <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 flex justify-end gap-3">
-              <button className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100 transition-colors">
-                {t('settings_cancel')}
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center gap-2 px-6 py-2 bg-teal-600 hover:bg-teal-700 text<think> rounded-xl text-sm font-medium transition-colors"
-              >
-                {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
-                {saved ? t('common_saved') : t('settings_save')}
-              </button>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div><label className="block text-xs font-bold text-navy-500 mb-1.5">{t('settings.first_name')}</label><input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="input-field" /></div>
+                <div><label className="block text-xs font-bold text-navy-500 mb-1.5">{t('settings.last_name')}</label><input value={lastName} onChange={(e) => setLastName(e.target.value)} className="input-field" /></div>
+                <div className="sm:col-span-2"><label className="block text-xs font-bold text-navy-500 mb-1.5">Email</label><input value={user?.email ?? ''} readOnly className="input-field bg-navy-50 cursor-not-allowed" /></div>
+              </div>
             </div>
+          )}
+
+          {activeTab === 'notifications' && (
+            <div>
+              <h3 className="text-base font-bold text-navy-900 mb-6">{t('settings.notifications')}</h3>
+              <div className="space-y-4">
+                {[
+                  { key: 'bookings' as const, label: t('settings.booking_confirmations') },
+                  { key: 'reminders' as const, label: t('settings.trip_reminders') },
+                  { key: 'deals' as const, label: t('settings.personalized_deals') },
+                  { key: 'newsletter' as const, label: t('settings.newsletter') },
+                ].map((item) => (
+                  <label key={item.key} className="flex items-center justify-between rounded-xl bg-navy-50 px-5 py-4 cursor-pointer hover:bg-azure-50 transition">
+                    <span className="text-sm font-medium text-navy-800">{item.label}</span>
+                    <div
+                      onClick={() => setNotifs((p) => ({ ...p, [item.key]: !p[item.key] }))}
+                      className={`relative h-6 w-11 rounded-full transition-colors ${notifs[item.key] ? 'bg-orange-500' : 'bg-navy-200'}`}
+                    >
+                      <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${notifs[item.key] ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'preferences' && (
+            <div>
+              <h3 className="text-base font-bold text-navy-900 mb-6">{t('settings.preferences')}</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-navy-500 mb-1.5">{t('settings.currency')}</label>
+                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="input-field">
+                    {['USD', 'EUR', 'EGP', 'SAR', 'AED', 'GBP'].map((c) => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-navy-500 mb-1.5">{t('settings.language')}</label>
+                  <div className="flex gap-2">
+                    {[{ id: 'en', label: 'English' }, { id: 'ar', label: 'العربية' }].map((l) => (
+                      <button
+                        key={l.id}
+                        onClick={() => setLanguage(l.id as 'en' | 'ar')}
+                        className={`flex-1 rounded-xl py-3 text-sm font-semibold border transition ${language === l.id ? 'bg-navy-900 text-white border-navy-900' : 'border-navy-200 text-navy-600 hover:border-navy-400'}`}
+                      >
+                        {l.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div>
+              <h3 className="text-base font-bold text-navy-900 mb-6">{t('settings.security')}</h3>
+              <div className="space-y-4">
+                <div><label className="block text-xs font-bold text-navy-500 mb-1.5">{t('settings.current_password')}</label><input type="password" className="input-field" placeholder="••••••••" /></div>
+                <div><label className="block text-xs font-bold text-navy-500 mb-1.5">{t('settings.new_password')}</label><input type="password" className="input-field" placeholder="••••••••" /></div>
+                <div><label className="block text-xs font-bold text-navy-500 mb-1.5">{t('settings.confirm_password')}</label><input type="password" className="input-field" placeholder="••••••••" /></div>
+                <button className="btn-navy px-6 py-3 text-sm">{t('settings.update_password')}</button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'subscription' && (
+            <div>
+              <h3 className="text-base font-bold text-navy-900 mb-6">{t('settings.subscription')}</h3>
+              <div className="rounded-2xl bg-gradient-to-r from-navy-900 to-navy-700 p-6 text-white mb-5">
+                <p className="text-xs font-bold uppercase tracking-widest text-azure-300/70 mb-1">{t('settings.current_plan')}</p>
+                <p className="text-2xl font-black">Explorer (Free)</p>
+                <p className="text-sm text-white/60 mt-1">Upgrade to unlock member deals & concierge.</p>
+              </div>
+              <div className="flex gap-3">
+                <button className="btn-cta px-6 py-3 text-sm">{language === 'ar' ? 'ترقية للبريميوم' : 'Upgrade to Premium'}</button>
+                <button className="rounded-xl border border-navy-200 px-5 py-3 text-sm font-medium text-navy-600 hover:border-navy-400 transition">{t('settings.cancel')}</button>
+              </div>
+            </div>
+          )}
+
+          {/* Save button */}
+          <div className="mt-8 flex justify-end">
+            <button onClick={save} className={`flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-bold transition ${saved ? 'bg-emerald-500 text-white' : 'btn-navy text-white'}`}>
+              {saved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+              {saved ? (language === 'ar' ? 'تم الحفظ!' : 'Saved!') : t('settings.save_changes')}
+            </button>
           </div>
         </div>
       </div>
     </DashboardLayout>
-  );
-}
-
-function Toggle({ defaultOn = false }: { defaultOn?: boolean }) {
-  const [on, setOn] = useState(defaultOn);
-  return (
-    <button
-      onClick={() => setOn(!on)}
-      className={`relative w-11 h-6 rounded-full transition-colors ${
-        on ? 'bg-teal-600' : 'bg-slate-300 dark:bg-slate-600'
-      }`}
-    >
-      <span
-        className={`absolute top-1 left-1 w-4 h-4 bg<think> rounded-full transition-transform ${
-          on ? 'translate-x-5' : 'translate-x-0'
-        }`}
-      />
-    </button>
   );
 }

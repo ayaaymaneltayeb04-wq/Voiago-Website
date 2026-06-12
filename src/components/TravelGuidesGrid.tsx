@@ -1,173 +1,73 @@
 import { useState } from 'react';
-import { MapPin, Clock, ArrowRight, Star } from 'lucide-react';
+import { Heart, Star, MapPin, Clock, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../lib/LanguageContext';
 
-interface Guide {
-  id: string;
-  title: string;
-  excerpt: string;
-  image: string;
-  location: string;
-  readTime: number;
-  rating: number;
-  tags: string[];
-}
-
-const guides: Guide[] = [
-  {
-    id: '1',
-    title: 'Hidden Gems of Dahab',
-    excerpt: 'Discover the untouched beauty of Dahab beyond the tourist trails. From secret lagoons to local Bedouin camps.',
-    image: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400&h=300&fit=crop',
-    location: 'Dahab, Egypt',
-    readTime: 8,
-    rating: 4.9,
-    tags: ['adventure', 'culture'],
-  },
-  {
-    id: '2',
-    title: 'Wadi Rum Desert Guide',
-    excerpt: 'A complete guide to exploring the Valley of the Moon. Best camps, trails, and stargazing spots.',
-    image: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=400&h=300&fit=crop',
-    location: 'Wadi Rum, Jordan',
-    readTime: 12,
-    rating: 4.8,
-    tags: ['desert', 'camping'],
-  },
-  {
-    id: '3',
-    title: 'Red Sea Diving Handbook',
-    excerpt: 'Everything you need to know about diving in the Red Sea. Top sites, safety tips, and marine life.',
-    image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
-    location: 'Red Sea, Egypt',
-    readTime: 15,
-    rating: 4.7,
-    tags: ['diving', 'nature'],
-  },
-  {
-    id: '4',
-    title: 'Cairo Street Food Tour',
-    excerpt: 'The ultimate food lover guide to Cairo. From koshari to falafel, explore the city one bite at a time.',
-    image: 'https://images.unsplash.com/photo-1539768942893-daf53e448371?w=400&h=300&fit=crop',
-    location: 'Cairo, Egypt',
-    readTime: 10,
-    rating: 4.6,
-    tags: ['food', 'culture'],
-  },
-  {
-    id: '5',
-    title: 'Petra by Night',
-    excerpt: 'Experience the magic of Petra after dark. Tips for the candlelit walk through the Siq to the Treasury.',
-    image: 'https://images.unsplash.com/photo-1579606038888-82c0f02f7f89?w=400&h=300&fit=crop',
-    location: 'Petra, Jordan',
-    readTime: 6,
-    rating: 4.9,
-    tags: ['history', 'culture'],
-  },
-  {
-    id: '6',
-    title: 'Luxor Temple Guide',
-    excerpt: 'A deep dive into ancient Thebes. Karnak, Luxor Temple, and the Valley of the Kings explained.',
-    image: 'https://images.unsplash.com/photo-1568322445389-f64a57b1d5e2?w=400&h=300&fit=crop',
-    location: 'Luxor, Egypt',
-    readTime: 14,
-    rating: 4.8,
-    tags: ['history', 'culture'],
-  },
+const guides = [
+  { id: 1, title: 'Hidden Gems of Cairo', location: 'Cairo, Egypt', img: 'https://images.unsplash.com/photo-1572252009286-268acec5ca0a?w=600&q=80', rating: 4.9, reviews: 218, readTime: '8 min', tags: ['Culture', 'History'] },
+  { id: 2, title: 'Dubai Beyond the Skyscrapers', location: 'Dubai, UAE', img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80', rating: 4.8, reviews: 341, readTime: '10 min', tags: ['Luxury', 'Nightlife'] },
+  { id: 3, title: 'Santorini Slow Travel', location: 'Santorini, Greece', img: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=600&q=80', rating: 5.0, reviews: 189, readTime: '7 min', tags: ['Romance', 'Views'] },
+  { id: 4, title: 'Kyoto Temple Walks', location: 'Kyoto, Japan', img: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&q=80', rating: 4.9, reviews: 156, readTime: '12 min', tags: ['Zen', 'Culture'] },
+  { id: 5, title: 'Marrakech Medina Guide', location: 'Marrakech, Morocco', img: 'https://images.unsplash.com/photo-1597211833712-5e41faa202ea?w=600&q=80', rating: 4.7, reviews: 204, readTime: '9 min', tags: ['Souks', 'Food'] },
+  { id: 6, title: 'Bali Sacred & Serene', location: 'Bali, Indonesia', img: 'https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=600&q=80', rating: 4.8, reviews: 312, readTime: '11 min', tags: ['Nature', 'Wellness'] },
 ];
 
 export function TravelGuidesGrid() {
-  const { t } = useLanguage();
-  const [activeFilter, setActiveFilter] = useState('all');
+  const { language } = useLanguage();
+  const [favorites, setFavorites] = useState<Set<number>>(new Set());
 
-  const filters = ['all', 'adventure', 'culture', 'food', 'nature', 'history'];
-
-  const filtered = activeFilter === 'all'
-    ? guides
-    : guides.filter((g) => g.tags.includes(activeFilter));
+  const toggleFav = (id: number) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   return (
-    <section id="guides" className="py-20 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            {t('guides_title')}
-          </h2>
-          <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mx-auto">
-            {t('guides_subtitle')}
-          </p>
-        </div>
-
-        {/* Filters */}
-        <div className="flex flex-wrap justify-center gap-2 mb-10">
-          {filters.map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setActiveFilter(filter)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                activeFilter === filter
-                  ? 'bg-teal-600 text<think> shadow-md'
-                  : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-              }`}
-            >
-              {filter === 'all' ? t('common_all') : filter.charAt(0).toUpperCase() + filter.slice(1)}
-            </button>
-          ))}
-        </div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filtered.map((guide) => (
-            <article
-              key={guide.id}
-              className="group bg<think> dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-300"
-            >
-              <div className="relative h-48 overflow-hidden">
-                <img
-                  src={guide.image}
-                  alt={guide.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full text-white text-xs">
-                  <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                  <span>{guide.rating}</span>
-                </div>
-              </div>
-              <div className="p-5">
-                <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-2">
-                  <MapPin className="h-3.5 w-3.5" />
-                  <span>{guide.location}</span>
-                  <span className="mx-1">·</span>
-                  <Clock className="h-3.5 w-3.5" />
-                  <span>{guide.readTime} {t('guides_min_read')}</span>
-                </div>
-                <h3 className="font-semibold text-slate-900 dark:text<think> text-lg mb-2 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
-                  {guide.title}
-                </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-300 mb-4 line-clamp-2">
-                  {guide.excerpt}
-                </p>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1">
-                    {guide.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-600 dark:text-slate-300"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                  <button className="flex items-center gap-1 text-sm text-teal-600 dark:text-teal-400 font-medium hover:underline">
-                    {t('guides_read_more')}
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <p className="section-label">{language === 'ar' ? 'أدلة السفر' : 'Travel Guides'}</p>
+          <h3 className="text-xl font-bold text-navy-900 mt-1">
+            {language === 'ar' ? 'دليلك الشامل لأجمل الوجهات' : 'Expert guides to top destinations'}
+          </h3>
         </div>
       </div>
-    </section>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {guides.map((g) => (
+          <article key={g.id} className="dest-card group bg-white">
+            <div className="aspect-[4/3] overflow-hidden">
+              <img src={g.img} alt={g.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" loading="lazy" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-navy-900/80 via-transparent to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-4">
+              <div className="flex flex-wrap gap-1 mb-2">
+                {g.tags.map((tag) => (
+                  <span key={tag} className="badge bg-white/20 text-white backdrop-blur-sm">{tag}</span>
+                ))}
+              </div>
+              <h4 className="text-sm font-bold text-white leading-tight">{g.title}</h4>
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex items-center gap-1 text-xs text-white/80">
+                  <MapPin className="h-3 w-3" /> {g.location}
+                </div>
+                <div className="flex items-center gap-1 text-xs text-amber-300">
+                  <Star className="h-3 w-3 fill-amber-300" /> {g.rating}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => toggleFav(g.id)}
+              className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition"
+            >
+              <Heart className={`h-4 w-4 ${favorites.has(g.id) ? 'fill-red-400 text-red-400' : 'text-white'}`} />
+            </button>
+            <div className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-medium text-white/80 bg-black/30 backdrop-blur-sm rounded-full px-2 py-0.5">
+              <Clock className="h-3 w-3" /> {g.readTime}
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
   );
 }

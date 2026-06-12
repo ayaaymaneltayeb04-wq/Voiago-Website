@@ -1,73 +1,117 @@
-import { MapPin, Building2, Hospital } from 'lucide-react';
+import { useState } from 'react';
+import { MapPin, Navigation, Layers, Shield, AlertTriangle, Info } from 'lucide-react';
 import { useLanguage } from '../lib/LanguageContext';
 
-interface Location {
-  type: 'embassy' | 'hospital';
-  name: string;
-  address: string;
-  distance: string;
-  phone: string;
-  hours: string;
+interface SafetyPoint {
+  id: string;
+  lat: number;
+  lng: number;
+  type: 'safe' | 'caution' | 'alert';
+  title: string;
+  desc: string;
 }
 
-interface SafetyMapProps {
-  locations: Location[];
-  countryName: string;
-}
+const safetyPoints: SafetyPoint[] = [
+  { id: '1', lat: 28.5, lng: 34.5, type: 'safe', title: 'Dahab Town Center', desc: 'Safe area with high police presence' },
+  { id: '2', lat: 28.48, lng: 34.52, type: 'safe', title: 'Blue Hole', desc: 'Popular diving spot, well patrolled' },
+  { id: '3', lat: 28.52, lng: 34.48, type: 'caution', title: 'Desert Trail', desc: 'Travel with guide recommended after dark' },
+  { id: '4', lat: 28.47, lng: 34.53, type: 'safe', title: 'Laguna Beach', desc: 'Family-friendly beach area' },
+];
 
-export function SafetyMap({ locations, countryName }: SafetyMapProps) {
-  const { language } = useLanguage();
+const typeConfig = {
+  safe: { icon: Shield, color: 'bg-emerald-500', ring: 'ring-emerald-200' },
+  caution: { icon: Info, color: 'bg-amber-500', ring: 'ring-amber-200' },
+  alert: { icon: AlertTriangle, color: 'bg-red-500', ring: 'ring-red-200' },
+};
+
+export function SafetyMap() {
+  const { t } = useLanguage();
+  const [selectedPoint, setSelectedPoint] = useState<SafetyPoint | null>(null);
+  const [mapLayer, setMapLayer] = useState<'safety' | 'traffic' | 'weather'>('safety');
 
   return (
-    <div className="card-premium p-6">
-      <div className="flex items-center gap-2 mb-5">
-        <MapPin className="h-5 w-5 text-azure-500" />
-        <h3 className="text-base font-bold text-navy-900">
-          {language === 'ar' ? `خريطة الأمان — ${countryName}` : `Safety Map — ${countryName}`}
-        </h3>
-      </div>
-
-      {/* Map placeholder */}
-      <div className="relative h-48 rounded-2xl bg-gradient-to-br from-azure-50 to-navy-50 border border-azure-100 mb-5 overflow-hidden flex items-center justify-center">
+    <div className="relative h-[500px] bg-slate-100 dark:bg-slate-700 rounded-2xl overflow-hidden">
+      {/* Map Placeholder */}
+      <div className="absolute inset-0 flex items-center justify-center">
         <div className="text-center">
-          <MapPin className="h-8 w-8 text-azure-400 mx-auto mb-2" />
-          <p className="text-sm text-navy-400 font-medium">{countryName}</p>
-          <p className="text-xs text-navy-300">{language === 'ar' ? 'خريطة تفاعلية' : 'Interactive Safety Map'}</p>
+          <MapPin className="h-16 w-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+          <p className="text-slate-500 dark:text-slate-400 font-medium">{t('common_map_loading')}</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500 mt-1">{t('common_map_coming_soon')}</p>
         </div>
-        {/* Decorative dots */}
-        {[
-          { top: '30%', left: '25%', color: 'bg-azure-500' },
-          { top: '55%', left: '60%', color: 'bg-orange-500' },
-          { top: '40%', left: '75%', color: 'bg-azure-500' },
-        ].map((dot, i) => (
-          <div
-            key={i}
-            className={`absolute h-3 w-3 rounded-full ${dot.color} animate-pulse-soft shadow-lg ring-2 ring-white`}
-            style={{ top: dot.top, left: dot.left }}
-          />
-        ))}
       </div>
 
-      {/* Location cards */}
-      <div className="space-y-3">
-        {locations.map((loc, i) => (
-          <div key={i} className="flex gap-3 rounded-xl bg-navy-50 p-4 border border-navy-100">
-            <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${loc.type === 'embassy' ? 'bg-navy-100 text-navy-700' : 'bg-red-50 text-red-500'}`}>
-              {loc.type === 'embassy' ? <Building2 className="h-4 w-4" /> : <Hospital className="h-4 w-4" />}
+      {/* Overlay Points */}
+      {safetyPoints.map((point) => {
+        const config = typeConfig[point.type];
+        const Icon = config.icon;
+        return (
+          <button
+            key={point.id}
+            onClick={() => setSelectedPoint(point)}
+            className={`absolute transform -translate-x-1/2 -translate-y-1/2 p-2 ${config.color} text<think> rounded-full shadow-lg ring-2 ${config.ring} hover:scale-110 transition-transform`}
+            style={{ top: `${(point.lat - 28.4) * 2000}px`, left: `${(point.lng - 34.4) * 2000}px` }}
+          >
+            <Icon className="h-4 w-4" />
+          </button>
+        );
+      })}
+
+      {/* Controls */}
+      <div className="absolute top-4 right-4 flex flex-col gap-2">
+        <button className="p-2 bg<think> dark:bg-slate-800 rounded-xl shadow-md text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+          <Navigation className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => setMapLayer(mapLayer === 'safety' ? 'traffic' : mapLayer === 'traffic' ? 'weather' : 'safety')}
+          className="p-2 bg<think> dark:bg-slate-800 rounded-xl shadow-md text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <Layers className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Layer Indicator */}
+      <div className="absolute top-4 left-4 px-3 py-1.5 bg<think> dark:bg-slate-800 rounded-xl shadow-md">
+        <span className="text-sm font-medium text-slate-700 dark:text-slate-200 capitalize">{mapLayer} {t('common_layer')}</span>
+      </div>
+
+      {/* Selected Point Info */}
+      {selectedPoint && (
+        <div className="absolute bottom-4 left-4 right-4 bg<think> dark:bg-slate-800 rounded-2xl p-4 shadow-xl border border-slate-200 dark:border-slate-700">
+          <div className="flex items-start gap-3">
+            <div className={`p-2 rounded-xl ${typeConfig[selectedPoint.type].color} text<think>`}>
+              {(() => {
+                const Icon = typeConfig[selectedPoint.type].icon;
+                return <Icon className="h-5 w-5" />;
+              })()}
             </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-sm font-semibold text-navy-800">{loc.name}</p>
-                <span className="text-[10px] font-bold text-azure-600 bg-azure-50 px-2 py-0.5 rounded-full whitespace-nowrap">{loc.distance}</span>
-              </div>
-              <p className="text-xs text-navy-400 mt-0.5">{loc.address}</p>
-              <div className="flex items-center gap-3 mt-1.5">
-                <a href={`tel:${loc.phone}`} className="text-[11px] font-semibold text-orange-600 hover:underline">{loc.phone}</a>
-                <span className="text-[11px] text-navy-400">{loc.hours}</span>
-              </div>
+            <div className="flex-1">
+              <h4 className="font-medium text-slate-900 dark:text<think>">{selectedPoint.title}</h4>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{selectedPoint.desc}</p>
             </div>
+            <button
+              onClick={() => setSelectedPoint(null)}
+              className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              ✕
+            </button>
           </div>
-        ))}
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="absolute bottom-4 right-4 bg<think> dark:bg-slate-800 rounded-xl shadow-md p-3 space-y-2">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-emerald-500" />
+          <span className="text-xs text-slate-600 dark:text-slate-300">{t('common_safe')}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-amber-500" />
+          <span className="text-xs text-slate-600 dark:text-slate-300">{t('common_caution')}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-500" />
+          <span className="text-xs text-slate-600 dark:text-slate-300">{t('common_alert')}</span>
+        </div>
       </div>
     </div>
   );

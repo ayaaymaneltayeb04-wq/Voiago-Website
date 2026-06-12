@@ -1,98 +1,208 @@
 import { useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { BookOpen, Plus, MapPin, Calendar, Smile, Image, Tag } from 'lucide-react';
 import { DashboardLayout } from '../components/DashboardLayout';
+import { useAuth } from '../lib/auth-context';
 import { useLanguage } from '../lib/LanguageContext';
-import { Plus, MapPin, Camera, Heart } from 'lucide-react';
 
 export const Route = createFileRoute('/journal')({
-  head: () => ({ meta: [{ title: 'Travel Journal — Voiago' }] }),
+  head: () => ({ meta: [{ title: 'Journal — Voiago' }] }),
   component: JournalPage,
 });
 
 const entries = [
-  { id: 1, title: 'Golden Hour at Santorini', place: 'Santorini, Greece', date: 'May 12, 2026', img: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?w=600&q=80', notes: 'Watched the sunset from the caldera edge — pure magic.', likes: 24 },
-  { id: 2, title: 'Lost in Kyoto\'s Temples', place: 'Kyoto, Japan', date: 'Mar 8, 2026', img: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&q=80', notes: 'Bamboo grove at dawn, no crowds. The silence was sacred.', likes: 31 },
-  { id: 3, title: 'Marrakech Night Market', place: 'Marrakech, Morocco', date: 'Jan 15, 2026', img: 'https://images.unsplash.com/photo-1597211833712-5e41faa202ea?w=600&q=80', notes: 'Spices, lanterns, laughter — Djemaa el-Fna at its best.', likes: 18 },
-  { id: 4, title: 'Dubai From Above', place: 'Dubai, UAE', date: 'Dec 20, 2025', img: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=600&q=80', notes: 'Burj Khalifa observation deck at sunset — breathtaking.', likes: 42 },
+  {
+    id: '1',
+    title: 'Sunset at the Red Sea',
+    content: 'The colors were absolutely breathtaking. The water was crystal clear and the coral reefs were teeming with life.',
+    location: 'Dahab, Egypt',
+    date: 'Jun 8, 2026',
+    mood: 'happy',
+    tags: ['diving', 'sunset', 'egypt'],
+    image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
+  },
+  {
+    id: '2',
+    title: 'Desert Camping Under Stars',
+    content: 'Spent the night in a Bedouin camp. The silence of the desert is something else entirely.',
+    location: 'Wadi Rum, Jordan',
+    date: 'May 22, 2026',
+    mood: 'peaceful',
+    tags: ['camping', 'desert', 'stars'],
+    image: 'https://images.unsplash.com/photo-1509316785289-025f5b846b35?w=400&h=300&fit=crop',
+  },
 ];
 
-function JournalPage() {
-  const { t, language } = useLanguage();
-  const [likes, setLikes] = useState<Set<number>>(new Set());
-  const [showForm, setShowForm] = useState(false);
-  const [newEntry, setNewEntry] = useState({ title: '', place: '', notes: '' });
+const moods = [
+  { id: 'happy', emoji: '😊', label: 'Happy' },
+  { id: 'excited', emoji: '🤩', label: 'Excited' },
+  { id: 'peaceful', emoji: '😌', label: 'Peaceful' },
+  { id: 'adventurous', emoji: '🏔️', label: 'Adventurous' },
+  { id: 'tired', emoji: '😴', label: 'Tired' },
+];
+
+export function JournalPage() {
+  const { t } = useLanguage();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [showNewEntry, setShowNewEntry] = useState(false);
+  const [newEntry, setNewEntry] = useState({ title: '', content: '', location: '', mood: 'happy', tags: '' });
+
+  if (!isAuthenticated) {
+    navigate({ to: '/auth' });
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600" />
+      </div>
+    );
+  }
 
   return (
-    <DashboardLayout title={t('journal.title')} subtitle={t('journal.subtitle')}>
-      {/* Stats + add button */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
-        <div className="flex gap-4">
-          {[
-            { value: entries.length + (showForm ? 1 : 0), label: language === 'ar' ? 'إدخالات' : 'Entries' },
-            { value: '186', label: language === 'ar' ? 'صورة' : 'Photos' },
-            { value: '8', label: language === 'ar' ? 'دول' : 'Countries' },
-          ].map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="text-2xl font-black text-navy-900">{s.value}</p>
-              <p className="text-xs text-navy-400">{s.label}</p>
-            </div>
-          ))}
+    <DashboardLayout title={t('journal_title')} subtitle={t('journal_subtitle')}>
+      <div className="max-w-4xl mx-auto">
+        {/* New Entry Button */}
+        <div className="flex justify-end mb-6">
+          <button
+            onClick={() => setShowNewEntry(!showNewEntry)}
+            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text<think> rounded-xl text-sm font-medium transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            {t('journal_new_entry')}
+          </button>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-cta px-5 py-2.5 text-sm">
-          <Plus className="h-4 w-4" /> {t('journal.add_entry')}
-        </button>
-      </div>
 
-      {/* New entry form */}
-      {showForm && (
-        <div className="card-premium p-6 mb-5 animate-fade-up">
-          <h3 className="text-sm font-bold text-navy-800 mb-4">{language === 'ar' ? 'إضافة ذكرى جديدة' : 'Add a new memory'}</h3>
-          <div className="grid sm:grid-cols-2 gap-4 mb-4">
-            <div><label className="block text-xs font-bold text-navy-500 mb-1.5">{t('journal.place')}</label><input value={newEntry.title} onChange={(e) => setNewEntry({ ...newEntry, title: e.target.value })} placeholder="Trip title" className="input-field" /></div>
-            <div><label className="block text-xs font-bold text-navy-500 mb-1.5">{t('journal.date')}</label><input value={newEntry.place} onChange={(e) => setNewEntry({ ...newEntry, place: e.target.value })} placeholder="Location" className="input-field" /></div>
-          </div>
-          <textarea rows={3} value={newEntry.notes} onChange={(e) => setNewEntry({ ...newEntry, notes: e.target.value })} placeholder={t('journal.notes')} className="input-field w-full resize-none mb-4" />
-          <div className="flex gap-2">
-            <button onClick={() => setShowForm(false)} className="btn-cta px-6 py-2.5 text-sm">{t('journal.save')}</button>
-            <button onClick={() => setShowForm(false)} className="rounded-xl border border-navy-200 px-5 py-2.5 text-sm font-medium text-navy-600 hover:border-navy-400 transition">{language === 'ar' ? 'إلغاء' : 'Cancel'}</button>
-          </div>
-        </div>
-      )}
-
-      {/* Entries grid */}
-      <div className="grid sm:grid-cols-2 gap-5">
-        {entries.map((entry) => (
-          <article key={entry.id} className="card-premium overflow-hidden group">
-            <div className="relative aspect-video overflow-hidden">
-              <img src={entry.img} alt={entry.title} loading="lazy" className="h-full w-full object-cover transition duration-500 group-hover:scale-105" />
-              <div className="absolute inset-0 bg-gradient-to-t from-navy-900/70 to-transparent" />
-              <div className="absolute bottom-4 left-4 right-4">
-                <h3 className="text-base font-bold text-white">{entry.title}</h3>
-                <div className="flex items-center gap-1 mt-1 text-white/70 text-xs">
-                  <MapPin className="h-3 w-3" /> {entry.place}
+        {/* New Entry Form */}
+        {showNewEntry && (
+          <div className="bg<think> dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 mb-6">
+            <div className="space-y-4">
+              <input
+                type="text"
+                value={newEntry.title}
+                onChange={(e) => setNewEntry({ ...newEntry, title: e.target.value })}
+                placeholder={t('journal_entry_title')}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
+              />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={newEntry.location}
+                    onChange={(e) => setNewEntry({ ...newEntry, location: e.target.value })}
+                    placeholder={t('journal_location')}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t('journal_date')}
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
+                  />
                 </div>
               </div>
-              <button
-                onClick={() => setLikes((prev) => { const n = new Set(prev); n.has(entry.id) ? n.delete(entry.id) : n.add(entry.id); return n; })}
-                className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/40 transition"
-              >
-                <Heart className={`h-4 w-4 ${likes.has(entry.id) ? 'fill-red-400 text-red-400' : 'text-white'}`} />
-              </button>
-            </div>
-            <div className="p-5">
-              <p className="text-xs text-navy-400 mb-2">{entry.date}</p>
-              <p className="text-sm text-navy-600 leading-relaxed line-clamp-2">{entry.notes}</p>
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex items-center gap-1.5 text-xs text-navy-400">
-                  <Camera className="h-3.5 w-3.5" /> {language === 'ar' ? 'عرض الصور' : 'View Photos'}
+              <textarea
+                value={newEntry.content}
+                onChange={(e) => setNewEntry({ ...newEntry, content: e.target.value })}
+                placeholder={t('journal_write_your_thoughts')}
+                rows={4}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
+              />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                  <Smile className="inline h-4 w-4 mr-1" />
+                  {t('journal_mood')}
+                </label>
+                <div className="flex gap-2">
+                  {moods.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => setNewEntry({ ...newEntry, mood: m.id })}
+                      className={`p-2 rounded-xl text-2xl transition-all ${
+                        newEntry.mood === m.id
+                          ? 'bg-teal-50 dark:bg-teal-900/20 ring-2 ring-teal-500'
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                      title={m.label}
+                    >
+                      {m.emoji}
+                    </button>
+                  ))}
                 </div>
-                <span className="text-xs font-semibold text-red-400 flex items-center gap-1">
-                  <Heart className="h-3.5 w-3.5 fill-red-400" /> {entry.likes + (likes.has(entry.id) ? 1 : 0)}
-                </span>
+              </div>
+              <div className="relative">
+                <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={newEntry.tags}
+                  onChange={(e) => setNewEntry({ ...newEntry, tags: e.target.value })}
+                  placeholder={t('journal_tags_placeholder')}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 bg<think> dark:bg-slate-700 text-slate-900 dark:text<think> focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setShowNewEntry(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-slate-800 dark:hover:text-slate-100 transition-colors"
+                >
+                  {t('common_cancel')}
+                </button>
+                <button className="px-6 py-2 bg-teal-600 hover:bg-teal-700 text<think> rounded-xl text-sm font-medium transition-colors">
+                  {t('common_save')}
+                </button>
               </div>
             </div>
-          </article>
-        ))}
+          </div>
+        )}
+
+        {/* Entries */}
+        {entries.length === 0 ? (
+          <div className="text-center py-16">
+            <BookOpen className="h-12 w-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-slate-900 dark:text<think> mb-2">{t('journal_no_entries')}</h3>
+            <p className="text-slate-500 dark:text-slate-400 mb-4">{t('journal_write_first')}</p>
+            <button
+              onClick={() => setShowNewEntry(true)}
+              className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text<think> rounded-xl text-sm font-medium transition-colors"
+            >
+              {t('journal_new_entry')}
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {entries.map((entry) => (
+              <div key={entry.id} className="bg<think> dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+                {entry.image && (
+                  <div className="h-48 overflow-hidden">
+                    <img src={entry.image} alt={entry.title} className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">
+                      {moods.find((m) => m.id === entry.mood)?.emoji}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{entry.date}</span>
+                  </div>
+                  <h3 className="font-semibold text-slate-900 dark:text<think> mb-2">{entry.title}</h3>
+                  <p className="text-sm text-slate-600 dark:text-slate-300 mb-3 line-clamp-3">{entry.content}</p>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <MapPin className="h-3 w-3" />
+                    <span>{entry.location}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {entry.tags.map((tag) => (
+                      <span key={tag} className="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-xs text-slate-600 dark:text-slate-300">
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
